@@ -49,7 +49,7 @@ class QLearner:
         for t in range(batch.max_seq_length):
             agent_outs = self.mac.forward(batch, t=t)
             mac_out.append(agent_outs)
-        mac_out = th.stack(mac_out, dim=1)  # Concat over time
+        mac_out = th.stack(mac_out, dim=1)  # Concat over time batch_size * seq_length * n_agents * n_actions
 
         # Pick the Q-Values for the actions taken by each agent
         chosen_action_qvals = th.gather(mac_out[:, :-1], dim=3, index=actions).squeeze(3)  # Remove the last dim
@@ -83,7 +83,7 @@ class QLearner:
 
         # Calculate 1-step Q-Learning targets
         targets = rewards + self.args.gamma * (1 - terminated) * target_max_qvals
-
+        print(targets, targets.size())
         # Td-error
         td_error = (chosen_action_qvals - targets.detach())
 
