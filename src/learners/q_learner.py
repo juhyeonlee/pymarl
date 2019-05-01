@@ -83,7 +83,7 @@ class QLearner:
 
         # Calculate 1-step Q-Learning targets
         targets = rewards + self.args.gamma * (1 - terminated) * target_max_qvals
-        print(targets, targets.size())
+
         # Td-error
         td_error = (chosen_action_qvals - targets.detach())
 
