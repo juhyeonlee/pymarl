@@ -114,8 +114,6 @@ class PotentialQLearner:
         mac_out[avail_actions == 0] = 0
 
         diff_rewards = chosen_action_qvals - th.mean(mac_out[:, :-1], dim=3)
-        print('ch q val', chosen_action_qvals)
-        print('diff reward', diff_rewards)
 
         # Calculate 1-step Q-Learning targets
         targets = diff_rewards + self.args.gamma * (1 - terminated) * target_max_qvals
