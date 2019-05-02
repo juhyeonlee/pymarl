@@ -112,8 +112,6 @@ class PotentialQLearner:
             target_max_qvals = target_mac_out.max(dim=3)[0]
 
         mac_out[avail_actions == 0] = 0
-        mac_out = mac_out / mac_out.sum(dim=-1, keepdim=True)
-        mac_out[avail_actions == 0] = 0
 
         diff_rewards = chosen_action_qvals - th.mean(mac_out[:, :-1], dim=3)
         print('ch q val', chosen_action_qvals)
