@@ -46,6 +46,8 @@ class PotentialQLearner:
             global_q_out.append(global_q.squeeze(1))
         global_q_out = th.stack(global_q_out, dim=1)
         chosen_g_action_qvals = th.gather(global_q_out[:, :-1], dim=3, index=actions).squeeze(3)  # Remove the last dim
+        default_actions = th.ones(actions.size(), dtype=th.long)
+        default_g_action_qvals = th.gather(global_q_out[:, :-1], dim=3, index=default_actions).squeeze(3)
 
         target_global_q_out = []
         for t in range(max_t):
@@ -102,6 +104,7 @@ class PotentialQLearner:
         # Mask out unavailable actions
         target_mac_out[avail_actions[:, 1:] == 0] = -9999999
 
+
         # Max over target Q-Values
         if self.args.double_q:
             # Get actions that maximise live Q (for double q-learning)
@@ -111,13 +114,10 @@ class PotentialQLearner:
         else:
             target_max_qvals = target_mac_out.max(dim=3)[0]
 
-        mac_out[avail_actions == 0] = 0
-
-        diff_rewards = chosen_action_qvals - th.mean(mac_out[:, :-1], dim=3)
+        diff_rewards = chosen_g_action_qvals - default_g_action_qvals
 
         # Calculate 1-step Q-Learning targets
-        targets = rewards + self.args.gamma * (1 - terminated) * target_max_qvals
-        #diff_rewards + self.args.gamma * (1 - terminated) * target_max_qvals
+        targets = diff_rewards + self.args.gamma * (1 - terminated) * target_max_qvals
 
         # Td-error
         td_error = (chosen_action_qvals - targets.detach())
