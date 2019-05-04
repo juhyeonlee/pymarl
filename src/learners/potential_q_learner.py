@@ -46,7 +46,7 @@ class PotentialQLearner:
             global_q_out.append(global_q.squeeze(1))
         global_q_out = th.stack(global_q_out, dim=1)
         chosen_g_action_qvals = th.gather(global_q_out[:, :-1], dim=3, index=actions).squeeze(3)  # Remove the last dim
-        default_actions = th.ones(actions.size(), dtype=th.long)
+        default_actions = th.ones(actions.size(), dtype=th.long).cuda()
         default_g_action_qvals = th.gather(global_q_out[:, :-1], dim=3, index=default_actions).squeeze(3)
 
         target_global_q_out = []
