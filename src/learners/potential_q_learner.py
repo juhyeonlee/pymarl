@@ -150,6 +150,8 @@ class PotentialQLearner:
             self.logger.log_stat('global_td_error_abs', (masked_td_error_g.abs().sum().item()/mask_elems), t_env)
             self.logger.log_stat('global_q_taken_mean', (chosen_g_action_qvals * mask).sum().item()/(mask_elems * self.args.n_agents), t_env)
             self.logger.log_stat('global_target_mean', (targets_g * mask).sum().item()/(mask_elems * self.args.n_agents), t_env)
+            self.logger.log_stat('default_g_action_qvals', (default_g_action_qvals * mask).sum().item()/(mask_elems * self.args.n_agents), t_env)
+            self.logger.log_stat('diff_rewards', (diff_rewards * mask).sum().item()/(mask_elems * self.args.n_agents), t_env)
             self.logger.log_stat("loss", loss.item(), t_env)
             self.logger.log_stat("grad_norm", grad_norm, t_env)
             self.logger.log_stat("td_error_abs", (masked_td_error.abs().sum().item()/mask_elems), t_env)
