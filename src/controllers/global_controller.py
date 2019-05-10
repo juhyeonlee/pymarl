@@ -50,7 +50,10 @@ class GlobalMAC:
         self.agent.load_state_dict(th.load("{}/agent.th".format(path), map_location=lambda storage, loc: storage))
 
     def _build_agents(self, scheme):
-        self.agent = agent_REGISTRY[self.args.agent](scheme, self.args).cuda()
+        if th.cuda.is_available():
+          self.agent = agent_REGISTRY[self.args.agent](scheme, self.args).cuda()
+        else:
+            self.agent = agent_REGISTRY[self.args.agent](scheme, self.args)
 
     # def _build_inputs(self, batch, t):
     #     # Assumes homogenous agents with flat observations.

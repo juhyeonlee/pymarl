@@ -18,7 +18,7 @@ class PotentialQLearner:
 
         self.log_stats_t = -self.args.learner_log_interval - 1
 
-        self.globalQ = GlobalQ(scheme, args)
+        self.globalQ = mac.agent
         self.target_globalQ = copy.deepcopy(self.globalQ)
 
         # self.localQ_params = list(mac.parameters())
@@ -173,13 +173,13 @@ class PotentialQLearner:
 
     def save_models(self, path):
         # self.mac.save_models(path)
-        th.save(self.globalQ.state_dict(), "{}/critic.th".format(path))
+        # th.save(self.globalQ.state_dict(), "{}/critic.th".format(path))
         # th.save(self.localQ_optimizer.state_dict(), "{}/agent_opt.th".format(path))
         th.save(self.globalQ_optimizer.state_dict(), "{}/critic_opt.th".format(path))
 
     def load_models(self, path):
         # self.mac.load_models(path)
-        self.globalQ.load_state_dict(th.load("{}/critic.th".format(path), map_location=lambda storage, loc: storage))
+        # self.globalQ.load_state_dict(th.load("{}/critic.th".format(path), map_location=lambda storage, loc: storage))
         # Not quite right but I don't want to save target networks
         self.target_globalQ.load_state_dict(self.globalQ.state_dict())
         # self.target_mac.load_state(self.mac)
