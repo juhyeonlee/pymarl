@@ -27,7 +27,7 @@ class GlobalMAC:
     def forward(self, ep_batch, t, test_mode=False):
         # agent_inputs = self._build_inputs(ep_batch, t)
         avail_actions = ep_batch["avail_actions"][:, t]
-        agent_outs, self.hidden_states = self.agent(ep_batch, t)
+        agent_outs = self.agent(ep_batch, t)
 
         return agent_outs.view(ep_batch.batch_size, self.n_agents, -1)
 

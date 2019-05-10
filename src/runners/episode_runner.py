@@ -50,7 +50,7 @@ class EpisodeRunner:
 
         terminated = False
         episode_return = 0
-        self.mac.init_hidden(batch_size=self.batch_size)
+        # self.mac.init_hidden(batch_size=self.batch_size)
 
         while not terminated:
 
