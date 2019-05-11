@@ -64,7 +64,7 @@ class GlobalQ(nn.Module):
         # observation
         input_shape += scheme["obs"]["vshape"]
         # actions and last actions
-        input_shape += scheme["actions_onehot"]["vshape"][0] * self.n_agents * 2
+        input_shape += scheme["actions_onehot"]["vshape"][0] * self.n_agents 
         # agent id
         input_shape += self.n_agents
         return input_shape
