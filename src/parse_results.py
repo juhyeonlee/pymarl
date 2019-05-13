@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 f = open('../results/sacred/5/info.json')
-ff = open('../results/sacred/7/info.json')
+ff = open('../results/sacred/8/info.json')
 data = json.load(f)
 data_2 = json.load(ff)
 test_won_mean = data['test_battle_won_mean']
@@ -21,5 +21,5 @@ plt.plot(test_won_mean_t, test_won_mean, label='qmix')
 plt.plot(test_won_mean_t_global_only, test_won_mean_global_only, label='global q only')
 plt.legend()
 plt.xlabel('T')
-plt.ylabel('default_g_action_qvals')
+plt.ylabel('test_battle_won_mean')
 plt.show()

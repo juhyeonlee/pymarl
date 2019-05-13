@@ -37,11 +37,11 @@ class GlobalQ(nn.Module):
         # observation
         inputs.append(batch["obs"][:, ts])
 
-        # # actions (masked out by agent)
-        # actions = batch["actions_onehot"][:, ts].view(bs, max_t, 1, -1).repeat(1, 1, self.n_agents, 1)
-        # agent_mask = (1 - th.eye(self.n_agents, device=batch.device))
-        # agent_mask = agent_mask.view(-1, 1).repeat(1, self.n_actions).view(self.n_agents, -1)
-        # inputs.append(actions * agent_mask.unsqueeze(0).unsqueeze(0))
+        # actions (masked out by agent)
+        actions = batch["actions_onehot"][:, ts].view(bs, max_t, 1, -1).repeat(1, 1, self.n_agents, 1)
+        agent_mask = (1 - th.eye(self.n_agents, device=batch.device))
+        agent_mask = agent_mask.view(-1, 1).repeat(1, self.n_actions).view(self.n_agents, -1)
+        inputs.append(actions * agent_mask.unsqueeze(0).unsqueeze(0))
 
         # last actions
         if t == 0:
@@ -64,7 +64,7 @@ class GlobalQ(nn.Module):
         # observation
         input_shape += scheme["obs"]["vshape"]
         # actions and last actions
-        input_shape += scheme["actions_onehot"]["vshape"][0] * self.n_agents 
+        input_shape += scheme["actions_onehot"]["vshape"][0] * self.n_agents * 2
         # agent id
         input_shape += self.n_agents
         return input_shape
