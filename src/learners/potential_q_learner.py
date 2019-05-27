@@ -182,7 +182,7 @@ class PotentialQLearner:
 
     def load_models(self, path):
         # self.mac.load_models(path)
-        self.globalQ.load_state_dict(th.load("{}/critic.th".format(path), map_location=lambda storage, loc: storage))
+        self.globalQ.load_state_dict(th.load("{}/critic_opt.th".format(path), map_location=lambda storage, loc: storage))
         # Not quite right but I don't want to save target networks
         self.target_globalQ.load_state_dict(self.globalQ.state_dict())
         # self.target_mac.load_state(self.mac)
