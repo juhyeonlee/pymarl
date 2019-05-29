@@ -5,11 +5,11 @@ agent: "global"
 action_selector: "epsilon_greedy"
 epsilon_start: 1.0
 epsilon_finish: 0.05
-epsilon_anneal_time: 50000
+epsilon_anneal_time: 100000
 mask_before_softmax: False
 
-runner: "episode"
-batch_size_run: 1
+runner: "parallel"
+batch_size_run: 4
 
 buffer_size: 5000
 
