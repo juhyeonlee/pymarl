@@ -38,7 +38,7 @@ class QMixer(nn.Module):
         # q_tot - q(-u) = u agent의 q 값
         # loss function 생각 해보기
 
-        self.wlu_mask = th.eye(self.n_agents, self.n_agents)
+        self.wlu_mask = th.eye(self.n_agents, device=args.device)
 
 
     def forward(self, agent_qs, states):
