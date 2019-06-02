@@ -78,14 +78,14 @@ class QLearner:
 
         # Mix
         if self.mixer is not None:
-            chosen_action_qvals = self.mixer(chosen_action_qvals, batch["state"][:, :-1])
-            target_max_qvals = self.target_mixer(target_max_qvals, batch["state"][:, 1:])
+            chosen_action_qvals, chosen_action_qvals_wlu = self.mixer(chosen_action_qvals, batch["state"][:, :-1])
+            target_max_qvals, target_max_qvals_wlu = self.target_mixer(target_max_qvals, batch["state"][:, 1:])
 
         # Calculate 1-step Q-Learning targets
-        targets = rewards + self.args.gamma * (1 - terminated) * target_max_qvals
+        targets = rewards + self.args.gamma * (1 - terminated) * (target_max_qvals - target_max_qvals_wlu)
 
         # Td-error
-        td_error = (chosen_action_qvals - targets.detach())
+        td_error = ((chosen_action_qvals - chosen_action_qvals_wlu) - targets.detach())
 
         mask = mask.expand_as(td_error)
 
