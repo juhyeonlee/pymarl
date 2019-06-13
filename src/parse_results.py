@@ -1,0 +1,52 @@
+import json
+import numpy as np
+import matplotlib.pyplot as plt
+
+f = open('../results/sacred/5/info.json')
+ff = open('../results/sacred/15/info.json')
+fff = open('../results/sacred/16/info.json')
+f_3s5z = open('../results/sacred/17/info.json') #21 (25m)
+ff_3s5z = open('../results/sacred/18/info.json') #22 (25m)
+
+data = json.load(f)
+data_2 = json.load(ff)
+data_3 = json.load(fff)
+data_4 = json.load(f_3s5z)
+data_5 = json.load(ff_3s5z)
+test_won_mean = data['test_battle_won_mean']
+test_won_mean_t = data['test_battle_won_mean_T']
+test_won_mean = np.array(test_won_mean).astype(np.float32)
+test_won_mean_t = np.array(test_won_mean_t).astype(np.int)
+
+# test_won_mean_global_only = data_2['test_battle_won_mean']
+# test_won_mean_t_global_only  = data_2['test_battle_won_mean_T']
+# test_won_mean_global_only = np.array(test_won_mean_global_only).astype(np.float32)
+# test_won_mean_t_global_only  = np.array(test_won_mean_t_global_only ).astype(np.int)
+
+test_won_mean_global_only_rnn = data_2['test_battle_won_mean']
+test_won_mean_t_global_only_rnn = data_2['test_battle_won_mean_T']
+test_won_mean_global_only_rnn = np.array(test_won_mean_global_only_rnn).astype(np.float32)
+test_won_mean_t_global_only_rnn= np.array(test_won_mean_t_global_only_rnn).astype(np.int)
+
+test_won_mean_qmix_3s5z = data_5['test_battle_won_mean']
+test_won_mean_t_qmix_3s5z = data_5['test_battle_won_mean_T']
+test_won_mean_qmix_3s5z = np.array(test_won_mean_qmix_3s5z).astype(np.float32)
+test_won_mean_t_qmix_3s5z = np.array(test_won_mean_t_qmix_3s5z).astype(np.int)
+
+test_won_mean_qmix_diff_3s5z = data_4['test_battle_won_mean']
+test_won_mean_t_qmix_diff_3s5z = data_4['test_battle_won_mean_T']
+test_won_mean_qmix_diff_3s5z = np.array(test_won_mean_qmix_diff_3s5z).astype(np.float32)
+test_won_mean_t_qmix_diff_3s5z = np.array(test_won_mean_t_qmix_diff_3s5z).astype(np.int)
+
+plt.figure(figsize=(11,4))
+plt.grid()
+# plt.plot(test_won_mean_t, test_won_mean, label='qmix for 2s3z', lw=1.5)
+# plt.plot(test_won_mean_t_global_only, test_won_mean_global_only, label='global q only + rnn', lw=1.5)
+# plt.plot(test_won_mean_t_global_only_rnn, test_won_mean_global_only_rnn, label='global q only + rnn', lw=1.5)
+plt.plot(test_won_mean_t_qmix_3s5z, test_won_mean_qmix_3s5z, label='qmix for 3s5z', lw=1.5)
+plt.plot(test_won_mean_t_qmix_diff_3s5z, test_won_mean_qmix_diff_3s5z, label='qmix + WLU for 3s5z', lw=1.5)
+
+plt.legend()
+plt.xlabel('T')
+plt.ylabel('test_battle_won_mean')
+plt.show()
