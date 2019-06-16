@@ -10,21 +10,31 @@ class GlobalQ(nn.Module):
         self.args = args
         self.n_actions = args.n_actions
         self.n_agents = args.n_agents
+        self.rnn_hidden_dim = 128
 
         input_shape = self._get_input_shape(scheme)
         self.output_type = "q"
 
         # Set up network layers
-        self.fc1 = nn.Linear(input_shape, 128)
-        self.fc2 = nn.Linear(128, 128)
-        self.fc3 = nn.Linear(128, self.n_actions)
+        self.fc1 = nn.Linear(input_shape, self.rnn_hidden_dim)
+        # self.fc2 = nn.Linear(128, 128)
+        self.rnn = nn.GRUCell(self.rnn_hidden_dim, self.rnn_hidden_dim)
+        self.fc3 = nn.Linear(self.rnn_hidden_dim, self.n_actions)
 
-    def forward(self, batch, t=None):
+    def forward(self, batch, hidden_state, t=None):
         inputs = self._build_inputs(batch, t=t)
         x = F.relu(self.fc1(inputs))
-        x = F.relu(self.fc2(x))
-        q = self.fc3(x)
-        return q
+        # print(x.size(), hidden_state.size())
+        h_in = hidden_state.reshape(-1, self.rnn_hidden_dim)
+        x_in = x.reshape(-1, self.rnn_hidden_dim)
+        h = self.rnn(x_in, h_in)
+        q = self.fc3(h)
+        q = q.reshape(batch.batch_size, self.n_agents, -1)
+        h = h.reshape(batch.batch_size, self.n_agents, -1)
+        return q, h
+
+    def init_hidden(self):
+        return self.fc1.weight.new(1, self.rnn_hidden_dim).zero_()
 
     def _build_inputs(self, batch, t=None):
         bs = batch.batch_size
