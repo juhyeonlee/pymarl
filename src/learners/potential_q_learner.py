@@ -43,8 +43,9 @@ class PotentialQLearner:
 
         # Optimize Global Q
         global_q_out = []
+        hidden_states = self.globalQ.init_hidden().unsqueeze(0).expand(bs, self.n_agents, -1)
         for t in range(max_t):
-            global_q = self.globalQ(batch, t=t)
+            global_q, hidden_states = self.globalQ(batch, hidden_states, t=t)
             global_q_out.append(global_q.squeeze(1))
         global_q_out = th.stack(global_q_out, dim=1)
         chosen_g_action_qvals = th.gather(global_q_out[:, :-1], dim=3, index=actions).squeeze(3)  # Remove the last dim
@@ -55,8 +56,9 @@ class PotentialQLearner:
         default_g_action_qvals = th.gather(global_q_out[:, :-1], dim=3, index=default_actions).squeeze(3)
 
         target_global_q_out = []
+        target_hidden_states = self.globalQ.init_hidden().unsqueeze(0).expand(bs, self.n_agents, -1)
         for t in range(max_t):
-            target_global_q = self.target_globalQ(batch, t=t)
+            target_global_q, target_hidden_states = self.target_globalQ(batch, target_hidden_states, t=t)
             target_global_q_out.append(target_global_q.squeeze(1))
         target_global_q_out = th.stack(target_global_q_out[1:], dim=1)
 
