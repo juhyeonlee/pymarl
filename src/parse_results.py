@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 f = open('../results/sacred/5/info.json')
 ff = open('../results/sacred/10/info.json')
 fff = open('../results/sacred/12/info.json')
-ffff = open('../results/sacred/13/info.json')
+ffff = open('../results/sacred/23/info.json')
 coma_f = open('../results/sacred/14/info.json')
 
 data = json.load(f)
