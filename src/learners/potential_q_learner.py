@@ -28,6 +28,8 @@ class PotentialQLearner:
         self.localQ_optimizer = RMSprop(params=self.localQ_params, lr=args.lr, alpha=args.optim_alpha, eps=args.optim_eps)
         self.globalQ_optimizer = RMSprop(params=self.globalQ_params, lr=args.global_lr, alpha=args.optim_alpha, eps=args.optim_eps)
 
+        self.trained_global =  args.trained_global
+
     def train(self, batch: EpisodeBatch, t_env: int, episode_num: int):
         # Get the relevant quantities
         bs = batch.batch_size
@@ -178,10 +180,14 @@ class PotentialQLearner:
         th.save(self.globalQ_optimizer.state_dict(), "{}/critic_opt.th".format(path))
 
     def load_models(self, path):
-        self.mac.load_models(path)
+        if not self.trained_global:
+          self.mac.load_models(path)
+          self.localQ_optimizer.load_state_dict(
+              th.load("{}/agent_opt.th".format(path), map_location=lambda storage, loc: storage))
+          self.globalQ_optimizer.load_state_dict(
+              th.load("{}/critic_opt.th".format(path), map_location=lambda storage, loc: storage))
+          self.target_mac.load_state(self.mac)
+
         self.globalQ.load_state_dict(th.load("{}/critic.th".format(path), map_location=lambda storage, loc: storage))
         # Not quite right but I don't want to save target networks
         self.target_globalQ.load_state_dict(self.globalQ.state_dict())
-        self.target_mac.load_state(self.mac)
-        self.localQ_optimizer.load_state_dict(th.load("{}/agent_opt.th".format(path), map_location=lambda storage, loc: storage))
-        self.globalQ_optimizer.load_state_dict(th.load("{}/critic_opt.th".format(path), map_location=lambda storage, loc: storage))
