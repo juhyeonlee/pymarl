@@ -128,7 +128,7 @@ class PotentialQLearner:
         else:
             target_max_qvals = target_mac_out.max(dim=3)[0]
 
-        diff_rewards = (chosen_g_action_qvals - default_g_action_qvals) * 10.
+        diff_rewards = (chosen_g_action_qvals - default_g_action_qvals)
 
         # Calculate 1-step Q-Learning targets
         targets = diff_rewards + self.args.gamma * (1 - terminated) * target_max_qvals
@@ -166,14 +166,15 @@ class PotentialQLearner:
             self.logger.log_stat('global_loss', loss_g.item(), t_env)
             self.logger.log_stat('global_grad_norm', grad_norm_g, t_env)
             mask_elems = mask.sum().item()
+            noop_mask_elems = noop_mask.sum().item()
             self.logger.log_stat('global_td_error_abs', (masked_td_error_g.abs().sum().item()/mask_elems), t_env)
             self.logger.log_stat('global_q_taken_mean', (chosen_g_action_qvals * mask).sum().item()/(mask_elems * self.args.n_agents), t_env)
             self.logger.log_stat('global_target_mean', (targets_g * mask).sum().item()/(mask_elems * self.args.n_agents), t_env)
             self.logger.log_stat('default_g_action_qvals', (default_g_action_qvals * mask).sum().item()/(mask_elems * self.args.n_agents), t_env)
-            self.logger.log_stat('diff_rewards', (diff_rewards * mask).sum().item()/(mask_elems * self.args.n_agents), t_env)
+            self.logger.log_stat('diff_rewards', (diff_rewards * noop_mask).sum().item()/(noop_mask_elems * self.args.n_agents), t_env)
             self.logger.log_stat("loss", loss.item(), t_env)
             self.logger.log_stat("grad_norm", grad_norm, t_env)
-            self.logger.log_stat("td_error_abs", (masked_td_error.abs().sum().item()/mask_elems), t_env)
+            self.logger.log_stat("td_error_abs", (masked_td_error.abs().sum().item()/noop_mask_elems), t_env)
             self.logger.log_stat("q_taken_mean", (chosen_action_qvals * mask).sum().item()/(mask_elems * self.args.n_agents), t_env)
             self.logger.log_stat("target_mean", (targets * mask).sum().item()/(mask_elems * self.args.n_agents), t_env)
             self.log_stats_t = t_env
