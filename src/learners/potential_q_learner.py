@@ -137,6 +137,10 @@ class PotentialQLearner:
         td_error = (chosen_action_qvals - targets.detach())
         noop_mask = th.zeros(td_error.size())
         noop_index = (actions == 0).squeeze().byte()
+        if th.cuda.is_available():
+            noop_mask.cuda()
+            noop_index.cuda()
+
         noop_mask[~noop_index] = 1
 
         mask = mask.expand_as(td_error)
