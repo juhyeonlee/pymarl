@@ -138,8 +138,8 @@ class PotentialQLearner:
         noop_mask = th.zeros(td_error.size())
         noop_index = (actions == 0).squeeze().byte()
         if th.cuda.is_available():
-            noop_mask.cuda()
-            noop_index.cuda()
+            noop_mask = noop_mask.cuda()
+            noop_index = noop_index.cuda()
 
         noop_mask[~noop_index] = 1
 
