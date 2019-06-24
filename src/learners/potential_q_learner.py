@@ -29,7 +29,7 @@ class PotentialQLearner:
         self.localQ_optimizer = RMSprop(params=self.localQ_params, lr=args.lr, alpha=args.optim_alpha, eps=args.optim_eps)
         self.globalQ_optimizer = RMSprop(params=self.globalQ_params, lr=args.global_lr, alpha=args.optim_alpha, eps=args.optim_eps)
 
-        self.trained_global =  args.trained_global
+        self.trained_global = args.trained_global
         # self.g_out = []
         # self.a_out = []
 
@@ -136,7 +136,7 @@ class PotentialQLearner:
         # Td-error
         td_error = (chosen_action_qvals - targets.detach())
         noop_mask = th.zeros(td_error.size())
-        noop_index = (actions == 0).squeeze().byte()
+        noop_index = (actions == 0).squeeze(3).byte()
         if th.cuda.is_available():
             noop_mask = noop_mask.cuda()
             noop_index = noop_index.cuda()
@@ -144,6 +144,7 @@ class PotentialQLearner:
         noop_mask[~noop_index] = 1
 
         mask = mask.expand_as(td_error)
+        noop_mask = noop_mask * mask
 
         # 0-out the targets that came from padded data
         masked_td_error = td_error * noop_mask #mask
@@ -151,6 +152,14 @@ class PotentialQLearner:
 
         # Normal L2 loss, take mean over actual data
         loss = (masked_td_error ** 2).sum() / noop_mask.sum()
+        if loss > 1e6:
+            print('-----')
+            print(((td_error * mask) ** 2).sum())
+            print((masked_td_error ** 2).sum())
+            print(mask.size(), noop_mask.size())
+            for idd in range(len(noop_mask)):
+                print(mask[idd] - noop_mask[idd])
+            print(mask.sum(), noop_mask.sum(), loss.item())
 
         # Optimise
         self.localQ_optimizer.zero_grad()
