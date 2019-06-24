@@ -136,7 +136,7 @@ class PotentialQLearner:
         # Td-error
         td_error = (chosen_action_qvals - targets.detach())
         noop_mask = th.zeros(td_error.size())
-        noop_index = (actions == 0).squeeze().byte()
+        noop_index = (actions == 0).squeeze(3).byte()
         if th.cuda.is_available():
             noop_mask = noop_mask.cuda()
             noop_index = noop_index.cuda()
@@ -151,7 +151,14 @@ class PotentialQLearner:
 
         # Normal L2 loss, take mean over actual data
         loss = (masked_td_error ** 2).sum() / noop_mask.sum()
-
+        if loss > 1e6:
+            print('-----')
+            print(((td_error * mask) ** 2).sum())
+            print((masked_td_error ** 2).sum())
+            print(mask.size(), noop_mask.size())
+            for idd in range(len(noop_mask)):
+                print(mask[idd] - noop_mask[idd])
+            print(mask.sum(), noop_mask.sum(), loss.item())
         # Optimise
         self.localQ_optimizer.zero_grad()
         loss.backward()
