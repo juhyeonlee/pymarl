@@ -128,7 +128,7 @@ class PotentialQLearner:
         else:
             target_max_qvals = target_mac_out.max(dim=3)[0]
 
-        diff_rewards = (chosen_g_action_qvals - default_g_action_qvals)
+        diff_rewards = (chosen_g_action_qvals - default_g_action_qvals) * 10.
 
         # Calculate 1-step Q-Learning targets
         targets = diff_rewards + self.args.gamma * (1 - terminated) * target_max_qvals
