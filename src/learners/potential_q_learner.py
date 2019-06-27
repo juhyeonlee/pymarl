@@ -131,7 +131,7 @@ class PotentialQLearner:
         diff_rewards = (chosen_g_action_qvals - default_g_action_qvals)
 
         # Calculate 1-step Q-Learning targets
-        targets = rewards + diff_rewards + self.args.gamma * (1 - terminated) * target_max_qvals
+        targets = diff_rewards + self.args.gamma * (1 - terminated) * target_max_qvals
 
         # Td-error
         td_error = (chosen_action_qvals - targets.detach())
