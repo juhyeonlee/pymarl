@@ -7,7 +7,7 @@ def env_fn(env, **kwargs) -> MultiAgentEnv:
     return env(**kwargs)
 
 REGISTRY = {}
-REGISTRY["sc2"] = partial(env_fn, env=StarCraft2Env)
+REGISTRY["sc2"] = partial(env_fn, env=StarCraft2Env(reward_win=5, reward_death_value=1))
 
 if sys.platform == "linux":
     os.environ.setdefault("SC2PATH",
