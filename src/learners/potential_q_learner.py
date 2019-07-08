@@ -222,3 +222,4 @@ class PotentialQLearner:
         self.globalQ.load_state_dict(th.load("{}/critic.th".format(path), map_location=lambda storage, loc: storage))
         # Not quite right but I don't want to save target networks
         self.target_globalQ.load_state_dict(self.globalQ.state_dict())
+
