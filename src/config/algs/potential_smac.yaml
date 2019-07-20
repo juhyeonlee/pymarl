@@ -27,3 +27,4 @@ learner: "potential_q_learner"
 double_q: True
 
 name: "potential_smac"
+trained_global: True

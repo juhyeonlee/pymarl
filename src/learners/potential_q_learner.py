@@ -3,6 +3,7 @@ from components.episode_buffer import EpisodeBatch
 from modules.potential.globalq import GlobalQ
 import torch as th
 from torch.optim import RMSprop
+import numpy as np
 
 
 class PotentialQLearner:
@@ -28,6 +29,10 @@ class PotentialQLearner:
         self.localQ_optimizer = RMSprop(params=self.localQ_params, lr=args.lr, alpha=args.optim_alpha, eps=args.optim_eps)
         self.globalQ_optimizer = RMSprop(params=self.globalQ_params, lr=args.global_lr, alpha=args.optim_alpha, eps=args.optim_eps)
 
+        self.trained_global = args.trained_global
+        # self.g_out = []
+        # self.a_out = []
+
     def train(self, batch: EpisodeBatch, t_env: int, episode_num: int):
         # Get the relevant quantities
         bs = batch.batch_size
@@ -41,10 +46,14 @@ class PotentialQLearner:
 
         # Optimize Global Q
         global_q_out = []
+        hidden_states = self.globalQ.init_hidden().unsqueeze(0).expand(bs, self.n_agents, -1)
         for t in range(max_t):
-            global_q = self.globalQ(batch, t=t)
+            global_q, hidden_states = self.globalQ(batch, hidden_states, t=t)
             global_q_out.append(global_q.squeeze(1))
         global_q_out = th.stack(global_q_out, dim=1)
+        # self.g_out.append(global_q_out.tolist())
+        # self.a_out.append(actions.tolist())
+
         chosen_g_action_qvals = th.gather(global_q_out[:, :-1], dim=3, index=actions).squeeze(3)  # Remove the last dim
         if th.cuda.is_available():
             default_actions = th.ones(actions.size(), dtype=th.long).cuda()
@@ -52,38 +61,39 @@ class PotentialQLearner:
             default_actions = th.ones(actions.size(), dtype=th.long)
         default_g_action_qvals = th.gather(global_q_out[:, :-1], dim=3, index=default_actions).squeeze(3)
 
-        target_global_q_out = []
-        for t in range(max_t):
-            target_global_q = self.target_globalQ(batch, t=t)
-            target_global_q_out.append(target_global_q.squeeze(1))
-        target_global_q_out = th.stack(target_global_q_out[1:], dim=1)
-
-        target_global_q_out[avail_actions[:, 1:] == 0] = -9999999
-
-        if self.args.double_q:
-            global_q_out[avail_actions == 0] = -9999999
-            cur_max_actions = global_q_out[:, 1:].max(dim=3, keepdim=True)[1]
-            target_g_max_qvals = th.gather(target_global_q_out, dim=3, index=cur_max_actions).squeeze(3)
-        else:
-            target_g_max_qvals = th.gather(target_global_q_out, dim=3, index=actions).squeeze(3)
-
-        # Calculate 1-step Q-Learning targets
-        targets_g = rewards + self.args.gamma * (1 - terminated) * target_g_max_qvals
-
-        # Td-error
-        td_error_g = (chosen_g_action_qvals - targets_g.detach())
-
-        mask = mask.expand_as(td_error_g)
-
-        # 0-out the targets that came from padded data
-        masked_td_error_g = td_error_g * mask
-
-        # Normal L2 loss, take mean over actual data
-        loss_g = (masked_td_error_g ** 2).sum() / mask.sum()
-        self.globalQ_optimizer.zero_grad()
-        loss_g.backward()
-        grad_norm_g = th.nn.utils.clip_grad_norm_(self.globalQ_params, self.args.grad_norm_clip)
-        self.globalQ_optimizer.step()
+        # target_global_q_out = []
+        # target_hidden_states = self.globalQ.init_hidden().unsqueeze(0).expand(bs, self.n_agents, -1)
+        # for t in range(max_t):
+        #     target_global_q, target_hidden_states = self.target_globalQ(batch, target_hidden_states, t=t)
+        #     target_global_q_out.append(target_global_q.squeeze(1))
+        # target_global_q_out = th.stack(target_global_q_out[1:], dim=1)
+        #
+        # target_global_q_out[avail_actions[:, 1:] == 0] = -9999999
+        #
+        # if self.args.double_q:
+        #     global_q_out[avail_actions == 0] = -9999999
+        #     cur_max_actions = global_q_out[:, 1:].max(dim=3, keepdim=True)[1]
+        #     target_g_max_qvals = th.gather(target_global_q_out, dim=3, index=cur_max_actions).squeeze(3)
+        # else:
+        #     target_g_max_qvals = th.gather(target_global_q_out, dim=3, index=actions).squeeze(3)
+        #
+        # # # Calculate 1-step Q-Learning targets
+        # targets_g = rewards + self.args.gamma * (1 - terminated) * target_g_max_qvals
+        #
+        # # Td-error
+        # td_error_g = (chosen_g_action_qvals - targets_g.detach())
+        #
+        # mask = mask.expand_as(td_error_g)
+        #
+        # # 0-out the targets that came from padded data
+        # masked_td_error_g = td_error_g * mask
+        #
+        # # Normal L2 loss, take mean over actual data
+        # loss_g = (masked_td_error_g ** 2).sum() / mask.sum()
+        # self.globalQ_optimizer.zero_grad()
+        # loss_g.backward()
+        # grad_norm_g = th.nn.utils.clip_grad_norm_(self.globalQ_params, self.args.grad_norm_clip)
+        # self.globalQ_optimizer.step()
 
         # for each local Q function
         # Calculate estimated Q-Values
@@ -96,6 +106,7 @@ class PotentialQLearner:
 
         # Pick the Q-Values for the actions taken by each agent
         chosen_action_qvals = th.gather(mac_out[:, :-1], dim=3, index=actions).squeeze(3)  # Remove the last dim
+
 
         target_mac_out = []
         self.target_mac.init_hidden(bs)
@@ -117,26 +128,43 @@ class PotentialQLearner:
         else:
             target_max_qvals = target_mac_out.max(dim=3)[0]
 
-        diff_rewards = chosen_g_action_qvals - default_g_action_qvals
+        diff_rewards = (chosen_g_action_qvals - default_g_action_qvals) * 10.
 
         # Calculate 1-step Q-Learning targets
         targets = diff_rewards + self.args.gamma * (1 - terminated) * target_max_qvals
 
         # Td-error
         td_error = (chosen_action_qvals - targets.detach())
+        noop_mask = th.zeros(td_error.size())
+        noop_index = (actions == 0).squeeze(3).byte()
+        if th.cuda.is_available():
+            noop_mask = noop_mask.cuda()
+            noop_index = noop_index.cuda()
+
+        noop_mask[~noop_index] = 1
 
         mask = mask.expand_as(td_error)
+        noop_mask = noop_mask * mask
 
         # 0-out the targets that came from padded data
-        masked_td_error = td_error * mask
+        masked_td_error = td_error * noop_mask #mask
+
 
         # Normal L2 loss, take mean over actual data
-        loss = (masked_td_error ** 2).sum() / mask.sum()
+        loss = (masked_td_error ** 2).sum() / noop_mask.sum()
+        if loss > 1e6:
+            print('-----')
+            print(((td_error * mask) ** 2).sum())
+            print((masked_td_error ** 2).sum())
+            print(mask.size(), noop_mask.size())
+            for idd in range(len(noop_mask)):
+                print(mask[idd] - noop_mask[idd])
+            print(mask.sum(), noop_mask.sum(), loss.item())
 
         # Optimise
         self.localQ_optimizer.zero_grad()
         loss.backward()
-        grad_norm = th.nn.utils.clip_grad_norm_(self.params, self.args.grad_norm_clip)
+        grad_norm = th.nn.utils.clip_grad_norm_(self.localQ_params, self.args.grad_norm_clip)
         self.localQ_optimizer.step()
 
         if (episode_num - self.last_target_update_episode) / self.args.target_update_interval >= 1.0:
@@ -144,17 +172,18 @@ class PotentialQLearner:
             self.last_target_update_episode = episode_num
 
         if t_env - self.log_stats_t >= self.args.learner_log_interval:
-            self.logger.log_stat('global_loss', loss_g.item(), t_env)
-            self.logger.log_stat('global_grad_norm', grad_norm_g, t_env)
+            # self.logger.log_stat('global_loss', loss_g.item(), t_env)
+            # self.logger.log_stat('global_grad_norm', grad_norm_g, t_env)
             mask_elems = mask.sum().item()
-            self.logger.log_stat('global_td_error_abs', (masked_td_error_g.abs().sum().item()/mask_elems), t_env)
+            noop_mask_elems = noop_mask.sum().item()
+            # self.logger.log_stat('global_td_error_abs', (masked_td_error_g.abs().sum().item()/mask_elems), t_env)
             self.logger.log_stat('global_q_taken_mean', (chosen_g_action_qvals * mask).sum().item()/(mask_elems * self.args.n_agents), t_env)
-            self.logger.log_stat('global_target_mean', (targets_g * mask).sum().item()/(mask_elems * self.args.n_agents), t_env)
+            # self.logger.log_stat('global_target_mean', (targets_g * mask).sum().item()/(mask_elems * self.args.n_agents), t_env)
             self.logger.log_stat('default_g_action_qvals', (default_g_action_qvals * mask).sum().item()/(mask_elems * self.args.n_agents), t_env)
-            self.logger.log_stat('diff_rewards', (diff_rewards * mask).sum().item()/(mask_elems * self.args.n_agents), t_env)
+            self.logger.log_stat('diff_rewards', (diff_rewards * noop_mask).sum().item()/(noop_mask_elems * self.args.n_agents), t_env)
             self.logger.log_stat("loss", loss.item(), t_env)
             self.logger.log_stat("grad_norm", grad_norm, t_env)
-            self.logger.log_stat("td_error_abs", (masked_td_error.abs().sum().item()/mask_elems), t_env)
+            self.logger.log_stat("td_error_abs", (masked_td_error.abs().sum().item()/noop_mask_elems), t_env)
             self.logger.log_stat("q_taken_mean", (chosen_action_qvals * mask).sum().item()/(mask_elems * self.args.n_agents), t_env)
             self.logger.log_stat("target_mean", (targets * mask).sum().item()/(mask_elems * self.args.n_agents), t_env)
             self.log_stats_t = t_env
@@ -176,12 +205,21 @@ class PotentialQLearner:
         th.save(self.globalQ.state_dict(), "{}/critic.th".format(path))
         th.save(self.localQ_optimizer.state_dict(), "{}/agent_opt.th".format(path))
         th.save(self.globalQ_optimizer.state_dict(), "{}/critic_opt.th".format(path))
+        # np.save("{}/g_out".format(path), self.g_out)
+        # np.save("{}/a_out".format(path), self.a_out)
+        # self.g_out = []
+        # self.a_out = []
 
     def load_models(self, path):
-        self.mac.load_models(path)
+        if not self.trained_global:
+          self.mac.load_models(path)
+          self.localQ_optimizer.load_state_dict(
+              th.load("{}/agent_opt.th".format(path), map_location=lambda storage, loc: storage))
+          self.globalQ_optimizer.load_state_dict(
+              th.load("{}/critic_opt.th".format(path), map_location=lambda storage, loc: storage))
+          self.target_mac.load_state(self.mac)
+
         self.globalQ.load_state_dict(th.load("{}/critic.th".format(path), map_location=lambda storage, loc: storage))
         # Not quite right but I don't want to save target networks
         self.target_globalQ.load_state_dict(self.globalQ.state_dict())
-        self.target_mac.load_state(self.mac)
-        self.localQ_optimizer.load_state_dict(th.load("{}/agent_opt.th".format(path), map_location=lambda storage, loc: storage))
-        self.globalQ_optimizer.load_state_dict(th.load("{}/critic_opt.th".format(path), map_location=lambda storage, loc: storage))
+
