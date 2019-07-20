@@ -164,7 +164,7 @@ class PotentialQLearner:
         # Optimise
         self.localQ_optimizer.zero_grad()
         loss.backward()
-        grad_norm = th.nn.utils.clip_grad_norm_(self.params, self.args.grad_norm_clip)
+        grad_norm = th.nn.utils.clip_grad_norm_(self.localQ_params, self.args.grad_norm_clip)
         self.localQ_optimizer.step()
 
         if (episode_num - self.last_target_update_episode) / self.args.target_update_interval >= 1.0:
