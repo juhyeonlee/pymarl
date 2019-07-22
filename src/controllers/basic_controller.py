@@ -7,6 +7,7 @@ import torch as th
 class BasicMAC:
     def __init__(self, scheme, groups, args):
         self.n_agents = args.n_agents
+        self.n_actions = scheme["actions_onehot"]["vshape"][0]
         self.args = args
         input_shape = self._get_input_shape(scheme)
         self._build_agents(input_shape)
