@@ -19,12 +19,12 @@ class BasicMAC:
     def select_actions(self, ep_batch, t_ep, t_env, bs=slice(None), test_mode=False):
         # Only select actions for the selected batch elements in bs
         avail_actions = ep_batch["avail_actions"][:, t_ep]
-        agent_outputs = self.forward(ep_batch, t_ep, test_mode=test_mode)
+        agent_outputs = self.forward(ep_batch, t_ep, test_mode=test_mode, select=True)
         chosen_actions = self.action_selector.select_action(agent_outputs[bs], avail_actions[bs], t_env, test_mode=test_mode)
         return chosen_actions
 
-    def forward(self, ep_batch, t, test_mode=False):
-        agent_inputs = self._build_inputs(ep_batch, t)
+    def forward(self, ep_batch, t, test_mode=False, select=False):
+        agent_inputs = self._build_inputs(ep_batch, t, select)
         avail_actions = ep_batch["avail_actions"][:, t]
         agent_outs, self.hidden_states = self.agent(agent_inputs, self.hidden_states)
 
@@ -74,7 +74,7 @@ class BasicMAC:
     def _build_agents(self, input_shape):
         self.agent = agent_REGISTRY[self.args.agent](input_shape, self.args)
 
-    def _build_inputs(self, batch, t):
+    def _build_inputs(self, batch, t, select=False):
         # Assumes homogenous agents with flat observations.
         # Other MACs might want to e.g. delegate building inputs to each agent
         bs = batch.batch_size
@@ -85,6 +85,16 @@ class BasicMAC:
                 inputs.append(th.zeros_like(batch["actions_onehot"][:, t]))
             else:
                 inputs.append(batch["actions_onehot"][:, t-1])
+
+        if self.args.obs_other_action:
+            actions = batch["actions_onehot"][:, t].view(bs, 1, -1).repeat(1, self.n_agents, 1)
+            if select:
+                inputs.append(th.zeros_like(actions))
+            else:
+                agent_mask = (1 - th.eye(self.n_agents, device=batch.device))
+                agent_mask = agent_mask.view(-1, 1).repeat(1, self.n_actions).view(self.n_agents, -1)
+                inputs.append(actions * agent_mask.unsqueeze(0))
+
         if self.args.obs_agent_id:
             inputs.append(th.eye(self.n_agents, device=batch.device).unsqueeze(0).expand(bs, -1, -1))
 
@@ -97,5 +107,7 @@ class BasicMAC:
             input_shape += scheme["actions_onehot"]["vshape"][0]
         if self.args.obs_agent_id:
             input_shape += self.n_agents
+        if self.args.obs_other_action:
+            input_shape += scheme["actions_onehot"]["vshape"][0] * self.n_agents
 
         return input_shape
