@@ -61,39 +61,39 @@ class PotentialQLearner:
             default_actions = th.ones(actions.size(), dtype=th.long)
         default_g_action_qvals = th.gather(global_q_out[:, :-1], dim=3, index=default_actions).squeeze(3)
 
-        # target_global_q_out = []
-        # target_hidden_states = self.globalQ.init_hidden().unsqueeze(0).expand(bs, self.n_agents, -1)
-        # for t in range(max_t):
-        #     target_global_q, target_hidden_states = self.target_globalQ(batch, target_hidden_states, t=t)
-        #     target_global_q_out.append(target_global_q.squeeze(1))
-        # target_global_q_out = th.stack(target_global_q_out[1:], dim=1)
-        #
-        # target_global_q_out[avail_actions[:, 1:] == 0] = -9999999
-        #
-        # if self.args.double_q:
-        #     global_q_out[avail_actions == 0] = -9999999
-        #     cur_max_actions = global_q_out[:, 1:].max(dim=3, keepdim=True)[1]
-        #     target_g_max_qvals = th.gather(target_global_q_out, dim=3, index=cur_max_actions).squeeze(3)
-        # else:
-        #     target_g_max_qvals = th.gather(target_global_q_out, dim=3, index=actions).squeeze(3)
-        #
-        # # # Calculate 1-step Q-Learning targets
-        # targets_g = rewards + self.args.gamma * (1 - terminated) * target_g_max_qvals
-        #
-        # # Td-error
-        # td_error_g = (chosen_g_action_qvals - targets_g.detach())
-        #
-        # mask = mask.expand_as(td_error_g)
-        #
-        # # 0-out the targets that came from padded data
-        # masked_td_error_g = td_error_g * mask
-        #
-        # # Normal L2 loss, take mean over actual data
-        # loss_g = (masked_td_error_g ** 2).sum() / mask.sum()
-        # self.globalQ_optimizer.zero_grad()
-        # loss_g.backward()
-        # grad_norm_g = th.nn.utils.clip_grad_norm_(self.globalQ_params, self.args.grad_norm_clip)
-        # self.globalQ_optimizer.step()
+        target_global_q_out = []
+        target_hidden_states = self.globalQ.init_hidden().unsqueeze(0).expand(bs, self.n_agents, -1)
+        for t in range(max_t):
+            target_global_q, target_hidden_states = self.target_globalQ(batch, target_hidden_states, t=t)
+            target_global_q_out.append(target_global_q.squeeze(1))
+        target_global_q_out = th.stack(target_global_q_out[1:], dim=1)
+
+        target_global_q_out[avail_actions[:, 1:] == 0] = -9999999
+
+        if self.args.double_q:
+            global_q_out[avail_actions == 0] = -9999999
+            cur_max_actions = global_q_out[:, 1:].max(dim=3, keepdim=True)[1]
+            target_g_max_qvals = th.gather(target_global_q_out, dim=3, index=cur_max_actions).squeeze(3)
+        else:
+            target_g_max_qvals = th.gather(target_global_q_out, dim=3, index=actions).squeeze(3)
+
+        # # Calculate 1-step Q-Learning targets
+        targets_g = rewards + self.args.gamma * (1 - terminated) * target_g_max_qvals
+
+        # Td-error
+        td_error_g = (chosen_g_action_qvals - targets_g.detach())
+
+        mask = mask.expand_as(td_error_g)
+
+        # 0-out the targets that came from padded data
+        masked_td_error_g = td_error_g * mask
+
+        # Normal L2 loss, take mean over actual data
+        loss_g = (masked_td_error_g ** 2).sum() / mask.sum()
+        self.globalQ_optimizer.zero_grad()
+        loss_g.backward()
+        grad_norm_g = th.nn.utils.clip_grad_norm_(self.globalQ_params, self.args.grad_norm_clip)
+        self.globalQ_optimizer.step()
 
         # for each local Q function
         # Calculate estimated Q-Values
@@ -128,7 +128,7 @@ class PotentialQLearner:
         else:
             target_max_qvals = target_mac_out.max(dim=3)[0]
 
-        diff_rewards = (chosen_g_action_qvals - default_g_action_qvals) * 10.
+        diff_rewards = (chosen_g_action_qvals - default_g_action_qvals) #* 10.
 
         # Calculate 1-step Q-Learning targets
         targets = diff_rewards + self.args.gamma * (1 - terminated) * target_max_qvals
