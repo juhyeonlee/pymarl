@@ -82,10 +82,10 @@ class QLearner:
             target_max_qvals, target_max_qvals_wlu = self.target_mixer(target_max_qvals, batch["state"][:, 1:])
 
         # Calculate 1-step Q-Learning targets
-        targets = rewards + self.args.gamma * (1 - terminated) * (target_max_qvals - target_max_qvals_wlu)
+        targets = rewards + self.args.gamma * (1 - terminated) * (target_max_qvals + target_max_qvals_wlu)
 
         # Td-error
-        td_error = ((chosen_action_qvals - chosen_action_qvals_wlu) - targets.detach())
+        td_error = ((chosen_action_qvals + chosen_action_qvals_wlu) - targets.detach())
 
         mask = mask.expand_as(td_error)
 
