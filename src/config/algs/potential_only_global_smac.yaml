@@ -5,11 +5,11 @@ agent: "global"
 action_selector: "epsilon_greedy"
 epsilon_start: 1.0
 epsilon_finish: 0.05
-epsilon_anneal_time: 50000
+epsilon_anneal_time: 500000
 mask_before_softmax: False
 
-runner: "episode"
-batch_size_run: 1
+runner: "parallel"
+batch_size_run: 4
 
 buffer_size: 5000
 
@@ -21,7 +21,7 @@ target_update_interval: 200
 
 lr: 0.0005
 global_lr: 0.0005
-td_lambda: 0.8
+#td_lambda: 0.8
 
 # use COMA
 agent_output_type: "q"

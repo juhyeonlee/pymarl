@@ -76,7 +76,7 @@ if __name__ == '__main__':
     # config_dict = {**config_dict, **env_config, **alg_config}
     config_dict = recursive_dict_update(config_dict, env_config)
     config_dict = recursive_dict_update(config_dict, alg_config)
-
+    
     # now add all the config to sacred
     ex.add_config(config_dict)
 
