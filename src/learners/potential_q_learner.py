@@ -104,7 +104,7 @@ class PotentialQLearner:
         chosen_action_qvals = th.gather(local_out[:, :-1], dim=3, index=actions).squeeze(3)  # Remove the last dim
 
         target_local_out = []
-        target_hidden_states = self.target_localQ.init_hidden(().unsqueeze(0).expand(bs, self.n_agents, -1))
+        target_hidden_states = self.target_localQ.init_hidden().unsqueeze(0).expand(bs, self.n_agents, -1)
         for t in range(max_t):
             target_agent_outs, target_hidden_states = self.target_localQ.forward(batch, target_hidden_states, t=t)
             target_local_out.append(target_agent_outs)
