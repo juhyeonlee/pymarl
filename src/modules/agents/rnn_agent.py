@@ -23,6 +23,7 @@ class RNNAgent(nn.Module):
         h = self.rnn(x, h_in)
         q = self.fc2(h)
         q = q.view(inputs.batch_size, self.n_agents, -1)
+
         return q, h
 
     def _build_inputs(self, batch, t):
