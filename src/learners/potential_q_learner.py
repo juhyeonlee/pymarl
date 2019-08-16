@@ -185,7 +185,7 @@ class PotentialQLearner:
 
 
     def _update_targets(self):
-        self.target_localQ.load_state(self.localQ)
+        self.target_localQ.load_state_dict(self.localQ.state_dict())
         self.target_globalQ.load_state_dict(self.globalQ.state_dict())
         self.logger.console_logger.info("Updated target network")
 
@@ -206,7 +206,7 @@ class PotentialQLearner:
         self.globalQ.load_state_dict(th.load("{}/critic.th".format(path), map_location=lambda storage, loc: storage))
         # Not quite right but I don't want to save target networks
         self.target_globalQ.load_state_dict(self.globalQ.state_dict())
-        self.target_localQ.load_state(self.localQ)
+        self.target_localQ.load_state_dict(self.localQ.state_dict)
         self.localQ_optimizer.load_state_dict(th.load("{}/agent_opt.th".format(path), map_location=lambda storage, loc: storage))
         self.globalQ_optimizer.load_state_dict(th.load("{}/critic_opt.th".format(path), map_location=lambda storage, loc: storage))
 
